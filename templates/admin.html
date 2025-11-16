@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administration - KuCoin Bot Scraper</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1>⚙️ Administration Scraper</h1>
+                <p class="subtitle">Gestion et surveillance du scraper KuCoin</p>
+            </div>
+        </header>
+
+        <div class="admin-grid">
+            <!-- Statut du Scraper -->
+            <div class="admin-card">
+                <h2>📊 Statut du Scraper</h2>
+                <div class="status-grid">
+                    <div class="status-item">
+                        <span class="status-label">Statut:</span>
+                        <span class="status-value status-{{ status.status }}">
+                            {{ status.status.upper() }}
+                        </span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Dernier scraping:</span>
+                        <span class="status-value">{{ status.last_scrape }}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Total bots:</span>
+                        <span class="status-value">{{ status.total_bots }}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Message:</span>
+                        <span class="status-value">{{ status.message }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="admin-card">
+                <h2>🎮 Actions</h2>
+                <div class="actions-grid">
+                    <button class="action-btn btn-primary" onclick="refreshStatus()">
+                        🔄 Rafraîchir le statut
+                    </button>
+                    <button class="action-btn btn-success" onclick="window.location.href='/'">
+                        📊 Voir le classement
+                    </button>
+                    <button class="action-btn btn-info" onclick="viewLogs()">
+                        📜 Voir les logs
+                    </button>
+                </div>
+            </div>
+
+            <!-- Informations Système -->
+            <div class="admin-card">
+                <h2>💻 Informations Système</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Intervalle de scraping:</span>
+                        <span class="info-value">1 heure</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Base de données:</span>
+                        <span class="info-value">SQLite</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Mode:</span>
+                        <span class="info-value">Production</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs récents -->
+            <div class="admin-card full-width">
+                <h2>📋 Logs Récents</h2>
+                <div id="logs" class="logs-container">
+                    <p class="log-entry">Chargement des logs...</p>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p><a href="/">← Retour au classement</a> • <a href="/analyzer">🎯 Nouvel Analyzer</a></p>
+        </footer>
+    </div>
+
+    <script>
+        function refreshStatus() {
+            location.reload();
+        }
+
+        function viewLogs() {
+            alert('Fonctionnalité de logs en développement');
+        }
+
+        // Auto-refresh toutes les 10 secondes
+        setInterval(() => {
+            fetch('/api/status')
+                .then(res => res.json())
+                .then(data => {
+                    // Mettre à jour l'affichage si nécessaire
+                    console.log('Status updated:', data);
+                });
+        }, 10000);
+    </script>
+</body>
+</html>

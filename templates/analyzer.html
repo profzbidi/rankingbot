@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KuCoin Bot Analyzer - Sélection Intelligente</title>
+    <style>
+        :root {
+            --primary: #00D085;
+            --primary-dark: #00A66C;
+            --secondary: #6366F1;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+            --info: #3B82F6;
+            --bg-primary: #0A0E1A;
+            --bg-secondary: #131825;
+            --bg-card: #1A1F2E;
+            --border: #2A3441;
+            --text-primary: #F9FAFB;
+            --text-secondary: #9CA3AF;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 2rem;
+            background: var(--bg-card);
+            border-radius: 1rem;
+            border: 1px solid var(--border);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Dashboard Grid */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Filters Panel */
+        .filters-panel {
+            background: var(--bg-card);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .filter-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-group h3 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .filter-options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .filter-option:hover {
+            background: var(--bg-secondary);
+        }
+
+        .filter-option.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .slider-container {
+            margin-top: 0.5rem;
+        }
+
+        .slider-value {
+            color: var(--primary);
+            font-weight: bold;
+            margin-top: 0.5rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            outline: none;
+        }
+
+        /* Results Grid */
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .sort-options {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .sort-btn {
+            padding: 0.5rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .sort-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .bots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* Bot Card */
+        .bot-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .bot-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .bot-card.featured {
+            border: 2px solid var(--primary);
+            background: linear-gradient(135deg, var(--bg-card), rgba(0, 208, 133, 0.1));
+        }
+
+        .bot-rank {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .bot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .bot-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .bot-pair {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .strategy-badge {
+            padding: 0.25rem 0.75rem;
+            background: var(--bg-secondary);
+            border-radius: 1rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .strategy-Grid { background: rgba(59, 130, 246, 0.2); color: var(--info); }
+        .strategy-DCA { background: rgba(16, 185, 129, 0.2); color: var(--primary); }
+        .strategy-Rebalance { background: rgba(139, 92, 246, 0.2); color: #8B5CF6; }
+        .strategy-Martingale { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+        .strategy-Infinity-Grid { background: rgba(236, 72, 153, 0.2); color: #EC4899; }
+
+        .bot-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .metric {
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .metric-value.positive {
+            color: var(--primary);
+        }
+
+        .metric-value.negative {
+            color: var(--danger);
+        }
+
+        .duration {
+            background: var(--bg-secondary);
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .duration-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .duration-value {
+            font-weight: 600;
+        }
+
+        .risk-indicator {
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        .risk-fill {
+            height: 100%;
+            transition: width 0.3s;
+        }
+
+        .risk-low { background: var(--primary); width: 25%; }
+        .risk-medium { background: var(--warning); width: 50%; }
+        .risk-high { background: var(--danger); width: 75%; }
+        .risk-very-high { background: var(--danger); width: 95%; }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            flex: 1;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Statistics */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .filters-panel {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🔍 KuCoin Bot Analyzer</h1>
+            <p>Sélection intelligente basée sur vos données en temps réel</p>
+            <div class="last-update" id="lastUpdate"></div>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalBots">--</div>
+                <div class="stat-label">Bots Analysés</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgRoi24h">--</div>
+                <div class="stat-label">ROI 24h Moyen</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="topStrategy">--</div>
+                <div class="stat-label">Stratégie Dominante</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="featuredBots">--</div>
+                <div class="stat-label">Bots Recommandés</div>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <!-- Filters Panel -->
+            <div class="filters-panel">
+                <div class="filter-group">
+                    <h3>🎯 Stratégies</h3>
+                    <div class="filter-options" id="strategyFilters">
+                        <!-- Dynamically filled -->
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h3>📈 Performance</h3>
+                    <div class="filter-options">
+                        <div class="filter-option active" data-filter="all">
+                            Toutes performances
+                        </div>
+                        <div class="filter-option" data-filter="roi24h">
+                            ROI 24h > 10%
+                        </div>
+                        <div class="filter-option" data-filter="apr7d">
+                            APR 7j > 100%
+                        </div>
+                        <div class="filter-option" data-filter="consistent">
+                            Performance Stable
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h3>⏱️ Durée Minimum</h3>
+                    <div class="slider-container">
+                        <input type="range" id="durationFilter" min="0" max="365" value="7">
+                        <div class="slider-value" id="durationValue">7 jours</div>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h3>💰 Investissement Min</h3>
+                    <div class="filter-options">
+                        <div class="filter-option active" data-investment="0">
+                            Tous montants
+                        </div>
+                        <div class="filter-option" data-investment="50">
+                            ≥ 50 USDT
+                        </div>
+                        <div class="filter-option" data-investment="100">
+                            ≥ 100 USDT
+                        </div>
+                        <div class="filter-option" data-investment="500">
+                            ≥ 500 USDT
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h3>⚡ Risque</h3>
+                    <div class="filter-options">
+                        <div class="filter-option active" data-risk="all">
+                            Tous les risques
+                        </div>
+                        <div class="filter-option" data-risk="low">
+                            Risque Faible
+                        </div>
+                        <div class="filter-option" data-risk="medium">
+                            Risque Moyen
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="applyFilters()">
+                    🔄 Appliquer les Filtres
+                </button>
+                <button class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;" onclick="refreshData()">
+                    🔁 Actualiser les données
+                </button>
+            </div>
+
+            <!-- Results -->
+            <div class="results">
+                <div class="results-header">
+                    <h2>🤖 Bots Recommandés</h2>
+                    <div class="sort-options">
+                        <button class="sort-btn active" data-sort="score">Score</button>
+                        <button class="sort-btn" data-sort="roi_24h">ROI 24h</button>
+                        <button class="sort-btn" data-sort="apr_7d">APR 7j</button>
+                        <button class="sort-btn" data-sort="duration_days">Durée</button>
+                        <button class="sort-btn" data-sort="copiers">Popularité</button>
+                    </div>
+                </div>
+
+                <div class="bots-grid" id="botsContainer">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Chargement des données KuCoin...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // État de l'application
+        let state = {
+            bots: [],
+            filteredBots: [],
+            filters: {
+                strategies: ['Grid', 'Rebalance', 'Martingale', 'Infinity Grid', 'DCA'],
+                minDuration: 7,
+                minInvestment: 0,
+                performance: 'all',
+                risk: 'all'
+            },
+            sortBy: 'score'
+        };
+
+        // API Endpoints
+        const API = {
+            bots: '/api/bots',
+            status: '/api/status',
+            strategies: '/api/strategies'
+        };
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            loadBots();
+            setupEventListeners();
+            setInterval(loadBots, 300000); // Refresh toutes les 5 minutes
+        });
+
+        async function loadBots() {
+            showLoading();
+            try {
+                const response = await fetch(API.bots);
+                const data = await response.json();
+                
+                if (data.success) {
+                    state.bots = processBotData(data.bots);
+                    setupFilters();
+                    applyFilters();
+                    updateLastUpdate();
+                } else {
+                    throw new Error('Erreur de chargement des données');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                document.getElementById('botsContainer').innerHTML = 
+                    '<div class="loading">Erreur de chargement des données</div>';
+            }
+        }
+
+        function processBotData(bots) {
+            return bots.map(bot => {
+                // Calculer le score intelligent
+                const score = calculateBotScore(bot);
+                
+                // Déterminer le risque
+                const risk = calculateRisk(bot);
+                
+                // CORRECTION : Formater correctement la durée
+                const durationDisplay = formatDurationDisplay(bot.duration_days, bot.duration);
+                
+                return {
+                    ...bot,
+                    score,
+                    risk,
+                    displayName: bot.bot_name || `Bot_${bot.rank || 'N/A'}`,
+                    durationDisplay: durationDisplay,
+                    durationDays: bot.duration_days || 0  // S'assurer que c'est un nombre
+                };
+            });
+        }
+
+        function formatDurationDisplay(durationDays, durationString) {
+            // Priorité à duration_days s'il est disponible et valide
+            if (durationDays && durationDays > 0) {
+                if (durationDays < 1) {
+                    return '< 1 jour';
+                } else if (durationDays === 1) {
+                    return '1 jour';
+                } else if (durationDays < 30) {
+                    return `${Math.round(durationDays)} jours`;
+                } else if (durationDays < 365) {
+                    return `${Math.round(durationDays / 30)} mois`;
+                } else {
+                    return `${Math.round(durationDays / 365)} ans`;
+                }
+            }
+            
+            // Fallback: utiliser la chaîne originale
+            if (durationString && durationString !== '0j') {
+                return durationString.replace('D', 'j ').replace('H', 'h ').replace('M', 'm');
+            }
+            
+            return 'N/A';
+        }
+
+        function calculateBotScore(bot) {
+            let score = 0;
+            
+            // ROI 24h (35%)
+            if (bot.return_24h) {
+                const roiScore = Math.min(Math.abs(bot.return_24h) / 50, 1) * 35;
+                score += roiScore;
+            }
+            
+            // APR 7j (40%)
+            if (bot.apr_7d) {
+                const aprScore = Math.min(Math.abs(bot.apr_7d) / 200, 1) * 40;
+                score += aprScore;
+            }
+            
+            // CORRECTION : Durée (15%) - utiliser durationDays
+            const durationDays = bot.durationDays || bot.duration_days || 0;
+            if (durationDays > 0) {
+                const durationScore = Math.min(durationDays / 365, 1) * 15;
+                score += durationScore;
+            }
+            
+            // Popularité (10%)
+            if (bot.copiers) {
+                const popularityScore = Math.min(bot.copiers / 1000, 1) * 10;
+                score += popularityScore;
+            }
+            
+            return Math.min(Math.round(score), 100);
+        }
+
+        function calculateRisk(bot) {
+            let risk = 5; // Risque moyen par défaut
+            
+            // CORRECTION : Utiliser durationDays pour le calcul du risque
+            const durationDays = bot.durationDays || bot.duration_days || 0;
+            
+            // Bots très récents = risque élevé
+            if (durationDays < 7) risk += 3;
+            else if (durationDays < 30) risk += 1;
+            else if (durationDays > 365) risk -= 1; // Ancien = moins risqué
+            
+            // Performances extrêmes = risque élevé
+            if (Math.abs(bot.return_24h) > 50 || Math.abs(bot.apr_7d) > 500) risk += 2;
+            
+            // Stratégies à risque
+            if (bot.strategy === 'Martingale') risk += 1;
+            if (bot.strategy === 'Infinity Grid') risk += 1;
+            
+            return Math.min(Math.max(risk, 1), 10);
+        }
+
+        function formatDuration(days) {
+            if (!days) return 'N/A';
+            
+            if (days < 1) {
+                return '< 1 jour';
+            } else if (days === 1) {
+                return '1 jour';
+            } else {
+                return `${Math.round(days)} jours`;
+            }
+        }
+
+        function setupFilters() {
+            // Stratégies
+            const strategyContainer = document.getElementById('strategyFilters');
+            strategyContainer.innerHTML = '';
+            
+            const strategies = [...new Set(state.bots.map(bot => bot.strategy).filter(Boolean))];
+            strategies.forEach(strategy => {
+                const option = document.createElement('div');
+                option.className = 'filter-option active';
+                option.textContent = strategy;
+                option.dataset.strategy = strategy;
+                option.onclick = function() {
+                    this.classList.toggle('active');
+                };
+                strategyContainer.appendChild(option);
+            });
+
+            // Slider de durée
+            const durationSlider = document.getElementById('durationFilter');
+            const durationValue = document.getElementById('durationValue');
+            
+            durationSlider.addEventListener('input', function() {
+                durationValue.textContent = this.value + ' jours';
+            });
+        }
+
+        function setupEventListeners() {
+            // Boutons de tri
+            document.querySelectorAll('.sort-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    state.sortBy = this.dataset.sort;
+                    applyFilters();
+                });
+            });
+
+            // Filtres de performance
+            document.querySelectorAll('[data-filter]').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('[data-filter]').forEach(o => o.classList.remove('active'));
+                    this.classList.add('active');
+                    state.filters.performance = this.dataset.filter;
+                });
+            });
+
+            // Filtres d'investissement
+            document.querySelectorAll('[data-investment]').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('[data-investment]').forEach(o => o.classList.remove('active'));
+                    this.classList.add('active');
+                    state.filters.minInvestment = parseInt(this.dataset.investment);
+                });
+            });
+
+            // Filtres de risque
+            document.querySelectorAll('[data-risk]').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('[data-risk]').forEach(o => o.classList.remove('active'));
+                    this.classList.add('active');
+                    state.filters.risk = this.dataset.risk;
+                });
+            });
+        }
+
+
+        // Mettre à jour la fonction applyFilters pour utiliser durationDays
+        function applyFilters() {
+            let filtered = [...state.bots];
+
+            // Filtrer par stratégies sélectionnées
+            const selectedStrategies = Array.from(document.querySelectorAll('#strategyFilters .filter-option.active'))
+                .map(el => el.dataset.strategy);
+            filtered = filtered.filter(bot => selectedStrategies.includes(bot.strategy));
+
+            // CORRECTION : Filtrer par durée - utiliser durationDays
+            const minDuration = parseInt(document.getElementById('durationFilter').value);
+            filtered = filtered.filter(bot => {
+                const durationDays = bot.durationDays || bot.duration_days || 0;
+                return durationDays >= minDuration;
+            });
+
+            // Filtrer par investissement
+            filtered = filtered.filter(bot => (bot.investment_min || 0) >= state.filters.minInvestment);
+
+            // Filtrer par performance
+            switch (state.filters.performance) {
+                case 'roi24h':
+                    filtered = filtered.filter(bot => bot.return_24h > 10);
+                    break;
+                case 'apr7d':
+                    filtered = filtered.filter(bot => bot.apr_7d > 100);
+                    break;
+                case 'consistent':
+                    filtered = filtered.filter(bot => bot.duration_days > 30 && bot.risk <= 6);
+                    break;
+            }
+
+            // Filtrer par risque
+            if (state.filters.risk !== 'all') {
+                switch (state.filters.risk) {
+                    case 'low':
+                        filtered = filtered.filter(bot => bot.risk <= 4);
+                        break;
+                    case 'medium':
+                        filtered = filtered.filter(bot => bot.risk > 4 && bot.risk <= 7);
+                        break;
+                }
+            }
+
+            // Trier
+            filtered.sort((a, b) => {
+                switch (state.sortBy) {
+                    case 'score':
+                        return b.score - a.score;
+                    case 'roi_24h':
+                        return (b.return_24h || 0) - (a.return_24h || 0);
+                    case 'apr_7d':
+                        return (b.apr_7d || 0) - (a.apr_7d || 0);
+                    case 'duration_days':
+                        return b.duration_days - a.duration_days;
+                    case 'copiers':
+                        return (b.copiers || 0) - (a.copiers || 0);
+                    default:
+                        return b.score - a.score;
+                }
+            });
+
+            state.filteredBots = filtered;
+            renderBots();
+            updateStatistics();
+        }
+
+        function renderBots() {
+            const container = document.getElementById('botsContainer');
+            
+            if (state.filteredBots.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 3rem; color: var(--text-secondary)">Aucun bot ne correspond aux critères de filtrage</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+
+            state.filteredBots.slice(0, 50).forEach((bot, index) => {
+                const card = document.createElement('div');
+                card.className = `bot-card ${index < 3 ? 'featured' : ''}`;
+                
+                const strategyClass = `strategy-${bot.strategy ? bot.strategy.replace(/\s+/g, '-') : 'Unknown'}`;
+                
+                card.innerHTML = `
+                    ${index < 5 ? `<div class="bot-rank">${index + 1}</div>` : ''}
+                    <div class="bot-header">
+                        <div>
+                            <div class="bot-name">${bot.displayName}</div>
+                            <div class="bot-pair">${bot.pair || 'N/A'}</div>
+                        </div>
+                        <div class="strategy-badge ${strategyClass}">${bot.strategy || 'Unknown'}</div>
+                    </div>
+                    
+                    <div class="bot-metrics">
+                        <div class="metric">
+                            <div class="metric-label">ROI 24h</div>
+                            <div class="metric-value ${(bot.return_24h || 0) > 0 ? 'positive' : ''}">
+                                ${bot.return_24h ? bot.return_24h.toFixed(2) + '%' : 'N/A'}
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">APR 7j</div>
+                            <div class="metric-value ${(bot.apr_7d || 0) > 0 ? 'positive' : ''}">
+                                ${bot.apr_7d ? bot.apr_7d.toFixed(2) + '%' : 'N/A'}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="duration">
+                        <div class="duration-label">Durée d'activité</div>
+                        <div class="duration-value">${bot.durationDisplay}</div>
+                    </div>
+                    
+                    <div class="risk-indicator">
+                        <div class="risk-fill ${getRiskClass(bot.risk)}"></div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                        <div>Score: <strong>${bot.score}/100</strong></div>
+                        <div>Risque: <strong>${bot.risk}/10</strong></div>
+                        ${bot.copiers ? `<div>Copieurs: <strong>${bot.copiers}</strong></div>` : ''}
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary" onclick="showBotDetails('${bot.bot_name}')">
+                            📊 Détails
+                        </button>
+                        <button class="btn btn-primary" onclick="selectBot('${bot.bot_name}')">
+                            ✅ Choisir
+                        </button>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        function getRiskClass(risk) {
+            if (risk <= 3) return 'risk-low';
+            if (risk <= 6) return 'risk-medium';
+            if (risk <= 8) return 'risk-high';
+            return 'risk-very-high';
+        }
+
+        function updateStatistics() {
+            document.getElementById('totalBots').textContent = state.bots.length;
+            
+            // ROI 24h moyen
+            const roiBots = state.bots.filter(bot => bot.return_24h);
+            const avgRoi = roiBots.length > 0 ? 
+                roiBots.reduce((sum, bot) => sum + bot.return_24h, 0) / roiBots.length : 0;
+            document.getElementById('avgRoi24h').textContent = avgRoi.toFixed(1) + '%';
+            
+            // Stratégie dominante
+            const strategyCount = {};
+            state.bots.forEach(bot => {
+                if (bot.strategy) {
+                    strategyCount[bot.strategy] = (strategyCount[bot.strategy] || 0) + 1;
+                }
+            });
+            const topStrategy = Object.entries(strategyCount).sort((a, b) => b[1] - a[1])[0];
+            document.getElementById('topStrategy').textContent = topStrategy ? topStrategy[0] : 'N/A';
+            
+            // Bots recommandés (score > 70)
+            const featuredCount = state.filteredBots.filter(bot => bot.score > 70).length;
+            document.getElementById('featuredBots').textContent = featuredCount;
+        }
+
+        function updateLastUpdate() {
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent = 
+                `Dernière mise à jour: ${now.toLocaleTimeString('fr-FR')}`;
+        }
+
+        function showLoading() {
+            document.getElementById('botsContainer').innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Chargement des données KuCoin...</p>
+                </div>
+            `;
+        }
+
+        async function refreshData() {
+            await loadBots();
+        }
+
+        function showBotDetails(botName) {
+            const bot = state.bots.find(b => b.bot_name === botName);
+            if (bot) {
+                alert(`Détails du bot:\n\n` +
+                      `Nom: ${bot.displayName}\n` +
+                      `Paire: ${bot.pair || 'N/A'}\n` +
+                      `Stratégie: ${bot.strategy || 'N/A'}\n` +
+                      `ROI 24h: ${bot.return_24h ? bot.return_24h.toFixed(2) + '%' : 'N/A'}\n` +
+                      `APR 7j: ${bot.apr_7d ? bot.apr_7d.toFixed(2) + '%' : 'N/A'}\n` +
+                      `Durée: ${bot.durationDisplay}\n` +
+                      `Score: ${bot.score}/100\n` +
+                      `Risque: ${bot.risk}/10\n` +
+                      `Copieurs: ${bot.copiers || 'N/A'}\n` +
+                      `Investissement min: ${bot.investment_min || 'N/A'} USDT`);
+            }
+        }
+
+        function selectBot(botName) {
+            const bot = state.bots.find(b => b.bot_name === botName);
+            if (bot) {
+                alert(`✅ Bot sélectionné!\n\n` +
+                      `"${bot.displayName}" - ${bot.pair || 'N/A'}\n` +
+                      `Stratégie: ${bot.strategy || 'N/A'}\n` +
+                      `Score: ${bot.score}/100\n\n` +
+                      `Ce bot a été ajouté à votre sélection.`);
+                
+                // Sauvegarde dans localStorage
+                let selectedBots = JSON.parse(localStorage.getItem('selectedBots') || '[]');
+                if (!selectedBots.includes(bot.bot_name)) {
+                    selectedBots.push(bot.bot_name);
+                    localStorage.setItem('selectedBots', JSON.stringify(selectedBots));
+                }
+            }
+        }
+    </script>
+</body>
+</html>

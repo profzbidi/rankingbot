@@ -1,1 +1,269 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KuCoin Bot Analyzer - Dashboard Intelligent</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header avec statistiques globales -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <h1>🤖 KuCoin Bot Analyzer</h1>
+                    <span class="subtitle">Sélection intelligente des meilleurs bots de trading</span>
+                </div>
+                <div class="header-stats">
+                    <div class="stat-card">
+                        <span class="stat-label">Bots analysés</span>
+                        <span class="stat-value" id="total-bots">0</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Dernière mise à jour</span>
+                        <span class="stat-value" id="last-update">--:--</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Statut</span>
+                        <span class="stat-value status-indicator" id="scraper-status">
+                            <span class="status-dot"></span>
+                            <span id="status-text">Chargement...</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </header>
 
+        <div class="main-layout">
+            <!-- Panneau de filtres avancés -->
+            <aside class="filters-sidebar">
+                <div class="filters-header">
+                    <h2>🎯 Filtres Avancés</h2>
+                    <button class="btn-reset" onclick="resetFilters()">Réinitialiser</button>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <button class="quick-btn active" onclick="applyPreset('all')">Tous</button>
+                    <button class="quick-btn" onclick="applyPreset('top-performers')">🏆 Top Performers</button>
+                    <button class="quick-btn" onclick="applyPreset('safe')">🛡️ Sécurisé</button>
+                    <button class="quick-btn" onclick="applyPreset('aggressive')">🚀 Agressif</button>
+                </div>
+
+                <!-- Stratégies -->
+                <div class="filter-section">
+                    <h3>📊 Stratégies</h3>
+                    <div class="checkbox-group" id="strategy-filters">
+                        <label class="checkbox-label">
+                            <input type="checkbox" value="Grid" checked>
+                            <span>Grid</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" value="Martingale" checked>
+                            <span>Martingale</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" value="Rebalance" checked>
+                            <span>Rebalance</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" value="Infinity Grid" checked>
+                            <span>Infinity Grid</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" value="DCA" checked>
+                            <span>DCA</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Filtres de performance -->
+                <div class="filter-section">
+                    <h3>📈 Performance</h3>
+                    
+                    <div class="range-filter">
+                        <label>Rendement 24h (%)</label>
+                        <div class="range-inputs">
+                            <input type="number" id="return-min" placeholder="Min" step="0.1">
+                            <span>-</span>
+                            <input type="number" id="return-max" placeholder="Max" step="0.1">
+                        </div>
+                        <input type="range" class="range-slider" id="return-slider" min="-50" max="100" value="0">
+                    </div>
+
+                    <div class="range-filter">
+                        <label>APR 7 jours (%)</label>
+                        <div class="range-inputs">
+                            <input type="number" id="apr7-min" placeholder="Min" step="1">
+                            <span>-</span>
+                            <input type="number" id="apr7-max" placeholder="Max" step="1">
+                        </div>
+                    </div>
+
+                    <div class="range-filter">
+                        <label>APR 30 jours (%)</label>
+                        <div class="range-inputs">
+                            <input type="number" id="apr30-min" placeholder="Min" step="1">
+                            <span>-</span>
+                            <input type="number" id="apr30-max" placeholder="Max" step="1">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filtres de risque -->
+                <div class="filter-section">
+                    <h3>⚠️ Gestion du risque</h3>
+                    
+                    <div class="range-filter">
+                        <label>Score de risque</label>
+                        <div class="risk-levels">
+                            <button class="risk-btn" data-risk="low">Faible (1-3)</button>
+                            <button class="risk-btn" data-risk="medium">Moyen (4-6)</button>
+                            <button class="risk-btn" data-risk="high">Élevé (7-10)</button>
+                        </div>
+                    </div>
+
+                    <div class="range-filter">
+                        <label>Durée minimale (jours)</label>
+                        <input type="number" id="duration-min" placeholder="Ex: 30" min="0">
+                    </div>
+
+                    <div class="range-filter">
+                        <label>Copieurs minimum</label>
+                        <input type="number" id="copiers-min" placeholder="Ex: 10" min="0">
+                    </div>
+                </div>
+
+                <!-- Paires de trading -->
+                <div class="filter-section">
+                    <h3>💱 Paires</h3>
+                    <div class="search-box">
+                        <input type="text" id="pair-search" placeholder="Rechercher une paire...">
+                    </div>
+                    <div class="pairs-list" id="pairs-list">
+                        <!-- Généré dynamiquement -->
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Zone principale avec tableau et graphiques -->
+            <main class="main-content">
+                <!-- Barre d'outils -->
+                <div class="toolbar">
+                    <div class="view-controls">
+                        <button class="view-btn active" onclick="setView('table')">
+                            📊 Tableau
+                        </button>
+                        <button class="view-btn" onclick="setView('cards')">
+                            🎴 Cartes
+                        </button>
+                        <button class="view-btn" onclick="setView('analytics')">
+                            📈 Analytique
+                        </button>
+                    </div>
+
+                    <div class="sort-controls">
+                        <label>Trier par:</label>
+                        <select id="sort-select" onchange="applySort()">
+                            <option value="return_24h_desc">Rendement 24h ↓</option>
+                            <option value="return_24h_asc">Rendement 24h ↑</option>
+                            <option value="apr_7d_desc">APR 7j ↓</option>
+                            <option value="apr_30d_desc">APR 30j ↓</option>
+                            <option value="risk_asc">Risque ↑</option>
+                            <option value="copiers_desc">Copieurs ↓</option>
+                            <option value="duration_desc">Durée ↓</option>
+                        </select>
+                    </div>
+
+                    <div class="action-controls">
+                        <button class="btn btn-export" onclick="exportData()">
+                            📥 Exporter
+                        </button>
+                        <button class="btn btn-refresh" onclick="refreshData()">
+                            🔄 Actualiser
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Zone de recommandations -->
+                <div class="recommendations-panel" id="recommendations">
+                    <h3>🎯 Recommandations Personnalisées</h3>
+                    <div class="recommendation-cards">
+                        <!-- Généré dynamiquement -->
+                    </div>
+                </div>
+
+                <!-- Vue tableau -->
+                <div class="view-container" id="table-view">
+                    <div class="table-wrapper">
+                        <table class="bots-table">
+                            <thead>
+                                <tr>
+                                    <th>Rang</th>
+                                    <th>Bot / Créateur</th>
+                                    <th>Paire</th>
+                                    <th>Stratégie</th>
+                                    <th>Rendement 24h</th>
+                                    <th>APR 7j</th>
+                                    <th>APR 30j</th>
+                                    <th>Durée</th>
+                                    <th>Copieurs</th>
+                                    <th>Risque</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bots-tbody">
+                                <!-- Données générées dynamiquement -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Vue cartes -->
+                <div class="view-container hidden" id="cards-view">
+                    <div class="cards-grid" id="bots-cards">
+                        <!-- Cartes générées dynamiquement -->
+                    </div>
+                </div>
+
+                <!-- Vue analytique -->
+                <div class="view-container hidden" id="analytics-view">
+                    <div class="analytics-grid">
+                        <div class="chart-container">
+                            <h3>Distribution des performances</h3>
+                            <canvas id="performance-chart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h3>Analyse risque/rendement</h3>
+                            <canvas id="risk-return-chart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h3>Répartition par stratégie</h3>
+                            <canvas id="strategy-chart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h3>Top paires tradées</h3>
+                            <canvas id="pairs-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Modal détails du bot -->
+        <div class="modal" id="bot-modal">
+            <div class="modal-content">
+                <span class="modal-close" onclick="closeModal()">&times;</span>
+                <div id="modal-body">
+                    <!-- Contenu généré dynamiquement -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
